@@ -34,6 +34,25 @@ resource "aws_iam_role" "role" {
 EOF
 }
 
+resource "aws_iam_role_policy" "role_policy" {
+  name = "${var.name}-policy"
+  role = "${aws_iam_role.role.id}"
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": [
+        "SNS:Publish"
+      ],
+      "Effect": "Allow",
+      "Resource": "${aws_sns_topic.sns.arn}"
+    }
+  ]
+}
+EOF
+}
+
 resource "aws_lambda_function" "function" {
   filename         = "${var.zip_file}"
   function_name    = "${var.name}"
