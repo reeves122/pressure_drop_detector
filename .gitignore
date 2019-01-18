@@ -105,3 +105,8 @@ venv.bak/
 
 # IDE
 .idea
+
+# Terraform
+.terraform
+*.tfstate*
+package.zip
