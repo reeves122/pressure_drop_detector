@@ -44,8 +44,9 @@ resource "aws_lambda_function" "function" {
 
   environment {
     variables = {
-      LOCATION = "${var.location}"
-      API_KEY  = "${var.api_key}"
+      LOCATION  = "${var.location}"
+      API_KEY   = "${var.api_key}"
+      SNS_TOPIC = "${var.sns_topic}"
     }
   }
 }
@@ -66,4 +67,8 @@ resource "aws_lambda_permission" "allow_cloudwatch_to_call_check_foo" {
     function_name = "${aws_lambda_function.function.function_name}"
     principal = "events.amazonaws.com"
     source_arn = "${aws_cloudwatch_event_rule.event_rule.arn}"
+}
+
+resource "aws_sns_topic" "sns" {
+  name = "${var.name}-sns"
 }

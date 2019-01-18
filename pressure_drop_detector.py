@@ -1,6 +1,7 @@
 import urllib.request
 import json
 import os
+import boto3
 
 # Weather location. Ex: 40.7127,-74.0059
 LOCATION = os.environ.get('LOCATION')
@@ -20,6 +21,8 @@ WARNING_HOURS_AHEAD = int(os.environ.get('WARNING_HOURS_AHEAD', '6'))
 # A warning will be generated if the pressure change percentage is greater than this value
 PCT_DROP_THRESHOLD = float(os.environ.get('WARNING_HOURS_AHEAD', '-0.4'))
 
+SNS_TOPIC = os.environ.get('SNS_TOPIC', None)
+SNS_CLIENT = boto3.client('sns')
 
 def _calculate_pct_change(original, new):
     """
@@ -57,17 +60,27 @@ def lambda_handler(event, context):
     hourly_pressure = [_convert_hpa_to_inhg(i['pressure']) for i in response_dict['hourly']['data']]
 
     pct_changes = []
-    pct_changes_text = []
+    pct_changes_text = ''
     for i in range(0, HOURS_AHEAD):
         change = _calculate_pct_change(current_pressure, hourly_pressure[i])
         pct_changes.append(change)
-        change_text = f'{i} hour pressure: {hourly_pressure[i]}. Change from current: {change}%'
-        pct_changes_text.append(change_text)
-        print(change_text)
+        change_text = f'{i} hour pressure: {hourly_pressure[i]}. Change from current: {change}%\n'
+        pct_changes_text += change_text
+
+    print(pct_changes_text)
 
     if pct_changes[WARNING_HOURS_AHEAD] < PCT_DROP_THRESHOLD:
-        print(f'WARNING: Large drop in pressure detected in the next {WARNING_HOURS_AHEAD} hours! '
-              f'({pct_changes[WARNING_HOURS_AHEAD]}%)')
+        warning_text = f'WARNING: Large drop in pressure detected in the ' \
+                       f'next {WARNING_HOURS_AHEAD} hours! ({pct_changes[WARNING_HOURS_AHEAD]}%)'
+
+        print(warning_text)
+
+        if SNS_TOPIC is not None:
+            print(f'Sending event to SNS Topic: {SNS_TOPIC}')
+            SNS_CLIENT.publish(
+                TopicArn=SNS_TOPIC,
+                Message=f'{warning_text}\n\n{pct_changes_text}'
+            )
 
 
 if __name__ == '__main__':

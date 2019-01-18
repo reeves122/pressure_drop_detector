@@ -5,3 +5,7 @@ variable "location" {
 variable "api_key" {
   default = ""
 }
+
+variable "sns_topic" {
+  default = ""
+}
